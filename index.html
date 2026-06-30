@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Used to Maze</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:"Roboto Condensed",sans-serif}
+    body{
+      background-image:linear-gradient(rgba(10,16,13,.10),rgba(10,16,13,.18)),url("https://i.postimg.cc/50K0v2Ss/496c0522c5f347c99364e5116d07317e-bananalab-pro-2K.jpg");
+      background-size:cover;background-position:center;touch-action:none
+    }
+    .wrap{width:100%;height:100%;display:grid;place-items:center;padding:12px}
+    .shell{
+      width:min(96vw,1120px);
+      height:min(90vh,780px);
+      border-radius:12px;
+      overflow:hidden;
+      position:relative;
+      background:transparent;
+      border:0;
+      box-shadow:none;
+      backdrop-filter:none
+    }
+    canvas{width:100%;height:100%;display:block;cursor:pointer}
+    .heroGif{
+      position:absolute;
+      left:0;
+      top:0;
+      pointer-events:none;
+      z-index:3;
+      transform-origin:center center;
+      will-change:transform,width,height,left,top;
+      user-select:none;
+      -webkit-user-drag:none
+    }
+    .hud{
+      position:absolute;left:12px;right:12px;top:12px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      pointer-events:none;z-index:4
+    }
+    .leftHud{display:flex;gap:8px;align-items:center;min-width:0;flex-wrap:wrap}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;min-height:38px;border-radius:10px;
+      background:rgba(255,255,246,.88);
+      border:1px solid rgba(255,255,255,.55);
+      box-shadow:0 10px 22px rgba(0,0,0,.14);
+      font-weight:900;font-size:14px;line-height:1;white-space:nowrap;color:#1b251f
+    }
+    .restart{
+      pointer-events:auto;
+      border:0;border-radius:10px;
+      min-height:38px;min-width:44px;
+      padding:8px 12px;
+      background:rgba(30,65,49,.94);
+      color:#fff;font-size:18px;font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.18);
+      cursor:pointer
+    }
+    .restart:active{transform:translateY(1px)}
+    .overlay,.finishScreen,.hintScreen,.gameOverScreen{
+      position:absolute;inset:0;display:none;
+      align-items:center;justify-content:center;
+      padding:18px;background:rgba(7,12,10,.52);backdrop-filter:blur(4px);z-index:10
+    }
+    .overlay.open,.finishScreen.open,.hintScreen.open,.gameOverScreen.open{display:flex}
+    .card,.finishBox,.hintBox,.gameOverBox{
+      width:min(580px,100%);
+      background:rgba(255,255,246,.96);
+      border:1px solid rgba(255,255,255,.7);
+      border-radius:12px;
+      box-shadow:0 26px 90px rgba(0,0,0,.36);
+      padding:18px
+    }
+    .cardTop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .count{font-weight:900;font-size:13px;color:#3f5e4e}
+    .close{
+      width:38px;height:38px;border:0;border-radius:10px;
+      background:#e9eddc;color:#24332b;
+      font-size:22px;font-weight:900;cursor:pointer;line-height:1
+    }
+    .sentence{margin:0 0 14px;font-size:clamp(20px,3.4vw,28px);line-height:1.16;font-weight:900;color:#152019}
+    .answers{display:grid;gap:10px}
+    .ans{
+      width:100%;min-height:48px;
+      border-radius:10px;
+      border:1px solid #d8deca;
+      background:#fff;
+      padding:12px 14px;
+      text-align:left;
+      font-size:16px;font-weight:900;color:#16211b;
+      cursor:pointer;
+      font-family:"Roboto Condensed",sans-serif
+    }
+    .ans.correct{background:#d8f2df;border-color:#57b073;color:#144323}
+    .ans.wrong{background:#ffe0d7;border-color:#e0735c;color:#6a2418}
+    .res{min-height:22px;margin-top:10px;font-weight:900;color:#2e4e3c}
+    .finishBox,.hintBox,.gameOverBox{text-align:center}
+    .finishBox h2,.hintBox h2,.gameOverBox h2{margin:0 0 10px;font-size:30px;line-height:1.06}
+    .finishBox p,.hintBox p,.gameOverBox p{margin:0 0 18px;font-size:17px;font-weight:900;color:#3b5244}
+    .finishBox button,.hintBox button,.gameOverBox button{
+      border:0;border-radius:10px;
+      min-height:44px;padding:10px 16px;
+      background:#1e4131;color:#fff;font-size:16px;font-weight:900;cursor:pointer;
+      font-family:"Roboto Condensed",sans-serif
+    }
+    .pad{
+      position:absolute;left:50%;transform:translateX(-50%);
+      bottom:14px;display:none;
+      grid-template-columns:48px 48px 48px;
+      grid-template-rows:48px 48px;
+      gap:8px;z-index:6
+    }
+    .pbtn{
+      border:0;border-radius:10px;
+      background:rgba(255,255,246,.84);
+      box-shadow:0 10px 20px rgba(0,0,0,.14);
+      font-size:22px;font-weight:900;color:#21342a;cursor:pointer;
+      font-family:"Roboto Condensed",sans-serif
+    }
+    .pbtn:nth-child(1){grid-column:2;grid-row:1}
+    .pbtn:nth-child(2){grid-column:1;grid-row:2}
+    .pbtn:nth-child(3){grid-column:2;grid-row:2}
+    .pbtn:nth-child(4){grid-column:3;grid-row:2}
+    @media (max-width:760px){
+      .wrap{padding:0}
+      .shell{width:100%;height:100%;border-radius:0}
+      .hud{left:10px;right:10px;top:10px}
+      .pill{min-height:34px;padding:7px 9px;font-size:12px;border-radius:10px}
+      .restart{min-height:34px;min-width:40px;font-size:16px;border-radius:10px}
+      .pad{display:grid}
+      canvas{cursor:default}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="shell" id="shell">
+      <canvas id="c"></canvas>
+      <img id="heroGif" class="heroGif" src="https://i.postimg.cc/qBYqvg7Y/download-(1).gif" alt="hero">
+
+      <div class="hud">
+        <div class="leftHud">
+          <div class="pill">Очки: <span id="score">0</span></div>
+          <div class="pill">Задания: <span id="tasks">0</span>/10</div>
+          <div class="pill">Ошибки: <span id="mistakes">0</span>/3</div>
+        </div>
+        <button class="restart" id="restart" aria-label="Перезапустить">↻</button>
+      </div>
+
+      <div class="pad" aria-hidden="false">
+        <button class="pbtn" data-dir="up">↑</button>
+        <button class="pbtn" data-dir="left">←</button>
+        <button class="pbtn" data-dir="down">↓</button>
+        <button class="pbtn" data-dir="right">→</button>
+      </div>
+
+      <section class="overlay" id="overlay">
+        <div class="card">
+          <div class="cardTop">
+            <div class="count" id="count">Used to</div>
+            <button class="close" id="close" aria-label="Закрыть">×</button>
+          </div>
+          <p class="sentence" id="sentence"></p>
+          <div class="answers" id="answers"></div>
+          <div class="res" id="res"></div>
+        </div>
+      </section>
+
+      <section class="hintScreen" id="hintScreen">
+        <div class="hintBox">
+          <h2>Почти!</h2>
+          <p id="hintText">Сначала собери все артефакты!</p>
+          <button id="hintOk">Ок</button>
+        </div>
+      </section>
+
+      <section class="finishScreen" id="finishScreen">
+        <div class="finishBox">
+          <h2>Готово</h2>
+          <p id="finishText"></p>
+          <button id="again">Play again</button>
+        </div>
+      </section>
+
+      <section class="gameOverScreen" id="gameOverScreen">
+        <div class="gameOverBox">
+          <h2>Game Over</h2>
+          <p>Ты допустил 3 ошибки.</p>
+          <button id="playAgainOver">Play again</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const canvas=document.getElementById("c");
+    const ctx=canvas.getContext("2d");
+    const shell=document.getElementById("shell");
+    const heroGif=document.getElementById("heroGif");
+    const scoreEl=document.getElementById("score");
+    const tasksEl=document.getElementById("tasks");
+    const mistakesEl=document.getElementById("mistakes");
+    const restartBtn=document.getElementById("restart");
+    const overlay=document.getElementById("overlay");
+    const sentenceEl=document.getElementById("sentence");
+    const answersEl=document.getElementById("answers");
+    const resEl=document.getElementById("res");
+    const countEl=document.getElementById("count");
+    const closeBtn=document.getElementById("close");
+    const finishScreen=document.getElementById("finishScreen");
+    const finishText=document.getElementById("finishText");
+    const againBtn=document.getElementById("again");
+    const hintScreen=document.getElementById("hintScreen");
+    const hintText=document.getElementById("hintText");
+    const hintOk=document.getElementById("hintOk");
+    const gameOverScreen=document.getElementById("gameOverScreen");
+    const playAgainOver=document.getElementById("playAgainOver");
+
+    const assets={
+      bush:"https://i.postimg.cc/xCpCH133/Dizajn-bez-nazvania-(3).png",
+      item1:"https://i.postimg.cc/3RWkRGQk/Dizajn-bez-nazvania-(4).png",
+      item2:"https://i.postimg.cc/x84BKcCt/e16430bfaa154365ace3ac96d2ed5d08-bananalab-pro-2K.png",
+      item3:"https://i.postimg.cc/KcB9fqW4/Dizajn-bez-nazvaniadd.png",
+      bonus:"https://i.postimg.cc/bJdZJnfb/b8fada5c6dc448d589f016c04d74a4c1-bananalab-pro-2K.png"
+    };
+
+    const images={};
+    Object.keys(assets).forEach(k=>{
+      images[k]=new Image();
+      images[k].crossOrigin="anonymous";
+      images[k].src=assets[k];
+    });
+
+    const questions=[
+      {text:"Stitch ___ live alone before he found his ohana.",options:["used to","use to","was used to"],answer:"used to"},
+      {text:"Lilo didn't ___ wake up early for hula practice.",options:["used to","use to","was used to"],answer:"use to"},
+      {text:"Did Nani ___ work late at the restaurant?",options:["use to","used to","was used to"],answer:"use to"},
+      {text:"Stitch ___ be very wild, but now he helps Lilo.",options:["used to","use to","is used to"],answer:"used to"},
+      {text:"Lilo ___ take photos of tourists on the beach.",options:["used to","use to","was used to"],answer:"used to"},
+      {text:"Jumba didn't ___ understand Earth rules.",options:["use to","used to","was used to"],answer:"use to"},
+      {text:"Pleakley ___ worry about every small danger.",options:["used to","use to","is used to"],answer:"used to"},
+      {text:"Did Stitch ___ steal snacks from the kitchen?",options:["use to","used to","was used to"],answer:"use to"},
+      {text:"Lilo and Stitch ___ dance together after school.",options:["used to","use to","were used to"],answer:"used to"},
+      {text:"Nani didn't ___ have much free time.",options:["use to","used to","was used to"],answer:"use to"}
+    ];
+
+    let w=0,h=0,dpr=1;
+    let mazeW=15,mazeH=9;
+    let cell=72,ox=0,oy=0;
+    let grid=null;
+    let startCell=null,finishCell=null;
+    let startOuter=null,finishOuter=null;
+    let player={x:0,y:0,px:0,py:0,tx:0,ty:0,moving:false,progress:1,dir:"down"};
+    let score=0,solved=0,mistakes=0;
+    let locked=false;
+    let currentQuestion=null,currentArtifact=null;
+    let points=[];
+    let particles=[];
+    let fireworks=[];
+    let lastTime=0;
+    let victory=false;
+    let gameOver=false;
+
+    function rint(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+    function shuffle(a){const c=a.slice();for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]]}return c}
+    function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+    function resize(){
+      const rect=shell.getBoundingClientRect();
+      dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+      w=Math.floor(rect.width);h=Math.floor(rect.height);
+      canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+
+      const compact=w<760;
+      mazeW=compact?13:15;
+      mazeH=compact?11:9;
+
+      cell=Math.floor(Math.min(w/(mazeW+2.2),h/(mazeH+3.6)));
+      cell=clamp(cell,54,88);
+
+      ox=Math.floor((w-mazeW*cell)/2);
+      oy=Math.floor((h-mazeH*cell)/2);
+
+      const minTop=88;
+      const maxBottom=h-(mazeH*cell)-cell*1.7;
+      oy=Math.max(minTop,Math.min(oy,maxBottom));
+    }
+
+    function pxCenter(x,y){
+      return {x:ox+x*cell+cell/2,y:oy+y*cell+cell/2}
+    }
+
+    function labelCenter(pos){
+      return {x:ox+(pos.x+0.5)*cell,y:oy+(pos.y+0.5)*cell}
+    }
+
+    function inside(x,y){
+      return x>=0&&y>=0&&x<mazeW&&y<mazeH
+    }
+
+    function initGrid(){
+      grid=new Array(mazeH).fill(0).map(()=>new Array(mazeW).fill(1));
+    }
+
+    function carveMaze(){
+      initGrid();
+      const cw=Math.floor((mazeW-1)/2);
+      const ch=Math.floor((mazeH-1)/2);
+      const carved=new Array(ch).fill(0).map(()=>new Array(cw).fill(false));
+
+      function cellToGrid(cx,cy){ return {x:cx*2+1,y:cy*2+1} }
+
+      const startC={x:rint(0,cw-1),y:rint(0,ch-1)};
+      const stack=[startC];
+      carved[startC.y][startC.x]=true;
+      const s0=cellToGrid(startC.x,startC.y);
+      grid[s0.y][s0.x]=0;
+
+      function neighbors(c){
+        return shuffle([{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}])
+          .map(d=>({x:c.x+d.x,y:c.y+d.y}))
+          .filter(n=>n.x>=0&&n.y>=0&&n.x<cw&&n.y<ch&&!carved[n.y][n.x]);
+      }
+
+      while(stack.length){
+        const cur=stack[stack.length-1];
+        const opts=neighbors(cur);
+        if(opts.length){
+          const n=opts[0];
+          carved[n.y][n.x]=true;
+          const g1=cellToGrid(cur.x,cur.y);
+          const g2=cellToGrid(n.x,n.y);
+          const wallX=(g1.x+g2.x)/2;
+          const wallY=(g1.y+g2.y)/2;
+          grid[g1.y][g1.x]=0;
+          grid[g2.y][g2.x]=0;
+          grid[wallY][wallX]=0;
+          stack.push({x:n.x,y:n.y});
+        }else{
+          stack.pop();
+        }
+      }
+
+      const entrances=[];
+
+      for(let x=1;x<mazeW-1;x+=2){
+        if(grid[1][x]===0) entrances.push({outer:{x:x,y:0},inner:{x:x,y:1}});
+        if(grid[mazeH-2][x]===0) entrances.push({outer:{x:x,y:mazeH-1},inner:{x:x,y:mazeH-2}});
+      }
+      for(let y=1;y<mazeH-1;y+=2){
+        if(grid[y][1]===0) entrances.push({outer:{x:0,y:y},inner:{x:1,y:y}});
+        if(grid[y][mazeW-2]===0) entrances.push({outer:{x:mazeW-1,y:y},inner:{x:mazeW-2,y:y}});
+      }
+
+      const startPick=entrances[rint(0,entrances.length-1)];
+      startOuter=startPick.outer;
+      startCell=startPick.inner;
+
+      let far=null,farD=-1;
+      entrances.forEach(e=>{
+        if(e.outer.x===startOuter.x && e.outer.y===startOuter.y) return;
+        const d=Math.abs(e.inner.x-startCell.x)+Math.abs(e.inner.y-startCell.y);
+        if(d>farD){farD=d;far=e}
+      });
+
+      finishOuter=far.outer;
+      finishCell=far.inner;
+
+      grid[startOuter.y][startOuter.x]=0;
+      grid[finishOuter.y][finishOuter.x]=0;
+      grid[startCell.y][startCell.x]=0;
+      grid[finishCell.y][finishCell.x]=0;
+    }
+
+    function passable(x,y){
+      if(!inside(x,y)) return false;
+      return grid[y][x]===0;
+    }
+
+    function listPathCells(){
+      const cells=[];
+      for(let y=1;y<mazeH-1;y++){
+        for(let x=1;x<mazeW-1;x++){
+          if(grid[y][x]===0) cells.push({x,y});
+        }
+      }
+      return cells;
+    }
+
+    function neighbors4(a,b){
+      return Math.abs(a.x-b.x)+Math.abs(a.y-b.y)===1;
+    }
+
+    function placePoints(){
+      points=[];
+      const open=shuffle(listPathCells().filter(p=>{
+        if(p.x===startCell.x&&p.y===startCell.y) return false;
+        if(p.x===finishCell.x&&p.y===finishCell.y) return false;
+        return true;
+      }));
+
+      const qlist=shuffle(questions);
+      const itemImgs=["item1","item2","item3"];
+
+      const selected=[];
+      for(const p of open){
+        const bad=selected.some(s=>neighbors4(s,p));
+        if(!bad) selected.push(p);
+        if(selected.length>=Math.min(18,open.length)) break;
+      }
+
+      const qCount=Math.min(10,qlist.length,selected.length);
+      for(let i=0;i<qCount;i++){
+        points.push({
+          x:selected[i].x,y:selected[i].y,
+          kind:"question",
+          img:itemImgs[i%itemImgs.length],
+          question:qlist[i],
+          done:false,
+          revealed:false
+        });
+      }
+
+      let bonusPlaced=0;
+      for(let i=qCount;i<selected.length;i++){
+        if(bonusPlaced>=6) break;
+        const p=selected[i];
+        const adjacentBonus=points.some(t=>t.kind==="bonus"&&!t.done&&neighbors4(t,p));
+        if(adjacentBonus) continue;
+        points.push({
+          x:p.x,y:p.y,
+          kind:"bonus",
+          img:"bonus",
+          done:false,
+          revealed:false
+        });
+        bonusPlaced++;
+      }
+    }
+
+    function updateHud(){
+      scoreEl.textContent=score;
+      tasksEl.textContent=solved;
+      mistakesEl.textContent=mistakes;
+    }
+
+    function reset(){
+      resize();
+      carveMaze();
+      placePoints();
+      player={x:startCell.x,y:startCell.y,px:startCell.x,py:startCell.y,tx:startCell.x,ty:startCell.y,moving:false,progress:1,dir:"down"};
+      score=0;solved=0;mistakes=0;
+      locked=false;
+      currentQuestion=null;currentArtifact=null;
+      particles=[];
+      fireworks=[];
+      victory=false;
+      gameOver=false;
+      overlay.classList.remove("open");
+      finishScreen.classList.remove("open");
+      hintScreen.classList.remove("open");
+      gameOverScreen.classList.remove("open");
+      updateHud();
+      revealNearby();
+      updateHeroVisual(0);
+    }
+
+    function revealNearby(){
+      points.forEach(p=>{
+        if(p.done) return;
+        const d=Math.abs(p.x-player.x)+Math.abs(p.y-player.y);
+        if(d<=0) p.revealed=true;
+      });
+    }
+
+    function canMove(dx,dy){
+      return passable(player.x+dx,player.y+dy);
+    }
+
+    function move(dx,dy){
+      if(locked||player.moving||victory||gameOver) return;
+      if(!canMove(dx,dy)) return;
+      player.px=player.x;player.py=player.y;
+      player.x+=dx;player.y+=dy;
+      player.tx=player.x;player.ty=player.y;
+      player.progress=0;player.moving=true;
+      if(dx>0) player.dir="right";
+      if(dx<0) player.dir="left";
+      if(dy>0) player.dir="down";
+      if(dy<0) player.dir="up";
+    }
+
+    function spawnText(x,y,text,color){
+      const c=pxCenter(x,y);
+      particles.push({x:c.x,y:c.y-cell*.25,vx:0,vy:-52,life:.85,text,color});
+    }
+
+    function collectBonus(p){
+      if(p.done) return;
+      p.done=true;
+      score+=10;
+      updateHud();
+      spawnText(p.x,p.y,"+10","#fff8aa");
+      const c=pxCenter(p.x,p.y);
+      for(let i=0;i<12;i++){
+        particles.push({x:c.x,y:c.y,vx:(Math.random()-.5)*110,vy:(Math.random()-.8)*110,life:.55,color:"#ffe66d"});
+      }
+    }
+
+    function openQuestion(p){
+      if(p.done||locked||victory||gameOver) return;
+      currentArtifact=p;
+      currentQuestion=p.question;
+      locked=true;
+      resEl.textContent="";
+      countEl.textContent="Used to · "+(solved+1)+"/10";
+      sentenceEl.textContent=currentQuestion.text;
+      answersEl.innerHTML="";
+      shuffle(currentQuestion.options).forEach(opt=>{
+        const b=document.createElement("button");
+        b.className="ans";
+        b.textContent=opt;
+        b.addEventListener("click",()=>choose(b,opt));
+        answersEl.appendChild(b);
+      });
+      overlay.classList.add("open");
+    }
+
+    function choose(btn,opt){
+      if(!currentArtifact || gameOver || victory) return;
+      const all=[...answersEl.querySelectorAll(".ans")];
+      all.forEach(b=>b.disabled=true);
+
+      if(opt===currentQuestion.answer){
+        btn.classList.add("correct");
+        resEl.textContent="+20";
+        score+=20;
+        solved+=1;
+        currentArtifact.done=true;
+        spawnText(currentArtifact.x,currentArtifact.y,"+20","#f7fff1");
+      }else{
+        btn.classList.add("wrong");
+        resEl.textContent="";
+        score=Math.max(0,score-5);
+        mistakes+=1;
+      }
+
+      updateHud();
+
+      if(mistakes>=3){
+        setTimeout(()=>{
+          overlay.classList.remove("open");
+          locked=true;
+          gameOver=true;
+          gameOverScreen.classList.add("open");
+          currentQuestion=null;
+          currentArtifact=null;
+        },700);
+        return;
+      }
+
+      setTimeout(()=>{
+        overlay.classList.remove("open");
+        locked=false;
+        currentQuestion=null;
+        currentArtifact=null;
+      }, opt===currentQuestion.answer?650:850);
+    }
+
+    function roundRect(x,y,w,h,r){
+      const rr=Math.min(r,w/2,h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr,y);
+      ctx.arcTo(x+w,y,x+w,y+h,rr);
+      ctx.arcTo(x+w,y+h,x,y+h,rr);
+      ctx.arcTo(x,y+h,x,y,rr);
+      ctx.arcTo(x,y,x+w,y,rr);
+      ctx.closePath();
+    }
+
+    function drawLabelAt(pos,text,accent){
+      const c=labelCenter(pos);
+      const padX=12;
+      const bh=Math.max(30,cell*0.42);
+      ctx.save();
+      ctx.font="900 "+Math.max(12,Math.floor(cell*0.22))+"px 'Roboto Condensed', sans-serif";
+      const m=ctx.measureText(text);
+      const bw=m.width+padX*2;
+      const x=c.x-bw/2;
+      const y=c.y-cell*0.22;
+      ctx.fillStyle="rgba(255,255,246,.92)";
+      ctx.strokeStyle="rgba(255,255,255,.55)";
+      ctx.lineWidth=1;
+      roundRect(x,y,bw,bh,10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle=accent;
+      ctx.textBaseline="middle";
+      ctx.fillText(text,x+padX,y+bh/2);
+      ctx.restore();
+    }
+
+    function drawBush(x,y){
+      const px=ox+x*cell;
+      const py=oy+y*cell;
+      const img=images.bush;
+      const s=cell*1.24;
+      if(img.complete && img.naturalWidth){
+        ctx.drawImage(img,px-(s-cell)/2,py-(s-cell)/2,s,s);
+      }else{
+        ctx.fillStyle="#2f6a3a";
+        ctx.fillRect(px,py,cell,cell);
+      }
+    }
+
+    function drawMaze(){
+      for(let y=0;y<mazeH;y++){
+        for(let x=0;x<mazeW;x++){
+          if(grid[y][x]===1) drawBush(x,y);
+        }
+      }
+    }
+
+    function drawSparkles(time){
+      points.forEach(p=>{
+        if(p.done) return;
+        if(p.revealed) return;
+        const c=pxCenter(p.x,p.y);
+        const pulse=0.92+Math.sin(time*0.004+(p.x*7+p.y*11))*0.14;
+        const alpha=0.72+Math.sin(time*0.004+(p.x*5+p.y*3))*0.18;
+        ctx.save();
+        ctx.globalAlpha=alpha;
+        ctx.shadowColor="rgba(255,219,94,0.95)";
+        ctx.shadowBlur=cell*0.18*pulse;
+        ctx.fillStyle="rgba(255,228,120,0.98)";
+        [
+          {dx:0,dy:0,r:cell*0.06*pulse},
+          {dx:-cell*0.08,dy:-cell*0.05,r:cell*0.022*pulse},
+          {dx:cell*0.07,dy:-cell*0.02,r:cell*0.02*pulse},
+          {dx:-cell*0.03,dy:cell*0.06,r:cell*0.018*pulse},
+          {dx:cell*0.05,dy:cell*0.05,r:cell*0.018*pulse}
+        ].forEach(s=>{
+          ctx.beginPath();
+          ctx.arc(c.x+s.dx,c.y+s.dy,s.r,0,Math.PI*2);
+          ctx.fill();
+        });
+        ctx.restore();
+      });
+    }
+
+    const glowCache=new Map();
+
+    function getGlowedImage(keyName,baseSize){
+      const cacheKey=keyName+"@"+Math.round(baseSize);
+      if(glowCache.has(cacheKey)) return glowCache.get(cacheKey);
+      const img=images[keyName];
+      if(!(img.complete && img.naturalWidth)) return null;
+      const s=Math.max(2,Math.round(baseSize));
+      const pad=Math.ceil(s*0.18);
+      const out=document.createElement("canvas");
+      out.width=s+pad*2;
+      out.height=s+pad*2;
+      const octx=out.getContext("2d");
+      octx.drawImage(img,pad,pad,s,s);
+      octx.globalCompositeOperation="source-in";
+      octx.fillStyle="rgba(255,242,150,0.92)";
+      octx.fillRect(0,0,out.width,out.height);
+      octx.globalCompositeOperation="source-over";
+      const glow=document.createElement("canvas");
+      glow.width=out.width;
+      glow.height=out.height;
+      const gctx=glow.getContext("2d");
+      gctx.filter="blur("+Math.max(6,Math.round(s*0.08))+"px)";
+      gctx.globalAlpha=0.9;
+      gctx.drawImage(out,0,0);
+      gctx.filter="none";
+      const final=document.createElement("canvas");
+      final.width=out.width;
+      final.height=out.height;
+      const fctx=final.getContext("2d");
+      fctx.globalAlpha=0.55;
+      fctx.drawImage(glow,0,0);
+      fctx.globalAlpha=1;
+      fctx.drawImage(img,pad,pad,s,s);
+      const res={canvas:final,pad};
+      glowCache.set(cacheKey,res);
+      return res;
+    }
+
+    function drawArtifacts(){
+      points.forEach(p=>{
+        if(p.done || !p.revealed) return;
+        const c=pxCenter(p.x,p.y);
+        const size=p.kind==="bonus"?cell*0.9:cell*0.92;
+        ctx.save();
+        if(p.kind==="bonus"){
+          const g=getGlowedImage("bonus",size);
+          if(g){
+            ctx.drawImage(g.canvas,c.x-(g.canvas.width/2),c.y-(g.canvas.height/2));
+          }
+        }else{
+          const img=images[p.img];
+          if(img.complete && img.naturalWidth){
+            ctx.drawImage(img,c.x-size/2,c.y-size/2,size,size);
+          }
+        }
+        ctx.restore();
+      });
+    }
+
+    function updateHeroVisual(time){
+      const from=pxCenter(player.px,player.py);
+      const to=pxCenter(player.tx,player.ty);
+      const t=player.moving?player.progress:1;
+      const eased=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+      const x=from.x+(to.x-from.x)*eased;
+      const y=from.y+(to.y-from.y)*eased;
+      const bob=player.moving?Math.sin(t*Math.PI)*cell*0.05:Math.sin(time*0.003)*cell*0.01;
+      const size=cell*1.16;
+      heroGif.style.width=size+"px";
+      heroGif.style.height=size+"px";
+      heroGif.style.left=(x-size/2)+"px";
+      heroGif.style.top=(y-size*0.66-bob)+"px";
+      heroGif.style.transform=player.dir==="left"?"scaleX(-1)":"scaleX(1)";
+      heroGif.style.filter="drop-shadow(0 8px 10px rgba(0,0,0,.22))";
+    }
+
+    function drawParticles(dt){
+      particles=particles.filter(p=>p.life>0);
+      particles.forEach(p=>{
+        p.life-=dt;
+        p.x+=p.vx*dt;
+        p.y+=p.vy*dt;
+        ctx.save();
+        ctx.globalAlpha=clamp(p.life/0.7,0,1);
+        if(p.text){
+          ctx.font="900 "+Math.max(18,Math.floor(cell*0.42))+"px 'Roboto Condensed', sans-serif";
+          ctx.textAlign="center";
+          ctx.lineWidth=4;
+          ctx.strokeStyle="rgba(25,35,28,.72)";
+          ctx.strokeText(p.text,p.x,p.y);
+          ctx.fillStyle=p.color;
+          ctx.fillText(p.text,p.x,p.y);
+        }else{
+          ctx.fillStyle=p.color;
+          ctx.beginPath();
+          ctx.arc(p.x,p.y,Math.max(2,cell*0.055),0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function launchFirework(){
+      const cx=rint(Math.floor(w*0.18),Math.floor(w*0.82));
+      const cy=rint(Math.floor(h*0.15),Math.floor(h*0.55));
+      for(let i=0;i<34;i++){
+        const a=Math.random()*Math.PI*2;
+        const sp=60+Math.random()*180;
+        fireworks.push({
+          x:cx,y:cy,
+          vx:Math.cos(a)*sp,
+          vy:Math.sin(a)*sp,
+          life:.9+Math.random()*.5,
+          color:Math.random()>.4?"#ffd54f":"#fff1a8",
+          r:2+Math.random()*3
+        });
+      }
+    }
+
+    function drawFireworks(dt){
+      if(victory && Math.random()<0.08) launchFirework();
+      fireworks=fireworks.filter(f=>f.life>0);
+      fireworks.forEach(f=>{
+        f.life-=dt;
+        f.x+=f.vx*dt;
+        f.y+=f.vy*dt;
+        f.vy+=30*dt;
+        ctx.save();
+        ctx.globalAlpha=Math.max(0,f.life);
+        ctx.shadowColor=f.color;
+        ctx.shadowBlur=14;
+        ctx.fillStyle=f.color;
+        ctx.beginPath();
+        ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function step(time){
+      const dt=Math.min(0.04,(time-lastTime)/1000||0.016);
+      lastTime=time;
+
+      ctx.clearRect(0,0,w,h);
+      drawMaze();
+      drawSparkles(time);
+      drawArtifacts();
+      drawLabelAt(startOuter,"START","#1e4131");
+      drawLabelAt(finishOuter,"FINISH","#1e4131");
+      drawParticles(dt);
+      drawFireworks(dt);
+      updateHeroVisual(time);
+
+      if(player.moving && !locked){
+        player.progress+=dt*5.4;
+        if(player.progress>=1){
+          player.progress=1;
+          player.moving=false;
+          player.px=player.x;player.py=player.y;
+          revealNearby();
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    function dirMove(name){
+      if(name==="up") move(0,-1);
+      if(name==="down") move(0,1);
+      if(name==="left") move(-1,0);
+      if(name==="right") move(1,0);
+    }
+
+    function isNearFinishClick(gx,gy){
+      return gx===finishOuter.x && gy===finishOuter.y && Math.abs(player.x-finishCell.x)+Math.abs(player.y-finishCell.y)<=1;
+    }
+
+    function tryFinish(){
+      if(solved<10){
+        hintText.textContent="Сначала собери все артефакты!";
+        hintScreen.classList.add("open");
+        return true;
+      }
+      victory=true;
+      locked=true;
+      finishText.textContent="Финиш! Очки: "+score+" · Задания: "+solved+"/10 · Ошибки: "+mistakes+"/3";
+      finishScreen.classList.add("open");
+      for(let i=0;i<5;i++) launchFirework();
+      return true;
+    }
+
+    function tryInteractAt(gx,gy){
+      if(isNearFinishClick(gx,gy)) return tryFinish();
+
+      const p=points.find(p=>!p.done && p.x===gx && p.y===gy);
+      if(!p) return false;
+      const dist=Math.abs(p.x-player.x)+Math.abs(p.y-player.y);
+      if(dist>1) return false;
+
+      if(!p.revealed){
+        p.revealed=true;
+        return true;
+      }
+
+      if(p.kind==="bonus") collectBonus(p);
+      if(p.kind==="question") openQuestion(p);
+      return true;
+    }
+
+    function pointer(e){
+      if(locked && !hintScreen.classList.contains("open")) return;
+      const rect=canvas.getBoundingClientRect();
+      const x=e.clientX-rect.left;
+      const y=e.clientY-rect.top;
+      const gx=Math.floor((x-ox)/cell);
+      const gy=Math.floor((y-oy)/cell);
+
+      if(tryInteractAt(gx,gy)) return;
+
+      if(locked||victory||gameOver) return;
+
+      const pc=pxCenter(player.x,player.y);
+      const dx=x-pc.x;
+      const dy=y-pc.y;
+      const d=Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up");
+      dirMove(d);
+    }
+
+    window.addEventListener("resize",reset);
+
+    window.addEventListener("keydown",e=>{
+      const kk=e.key.toLowerCase();
+      if(["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"," "].includes(kk)) e.preventDefault();
+      if(hintScreen.classList.contains("open")) return;
+      if(kk==="arrowup"||kk==="w") dirMove("up");
+      if(kk==="arrowdown"||kk==="s") dirMove("down");
+      if(kk==="arrowleft"||kk==="a") dirMove("left");
+      if(kk==="arrowright"||kk==="d") dirMove("right");
+    });
+
+    canvas.addEventListener("pointerdown",pointer);
+
+    document.querySelectorAll(".pbtn").forEach(b=>{
+      b.addEventListener("pointerdown",e=>{
+        e.preventDefault();
+        dirMove(b.dataset.dir);
+      });
+    });
+
+    restartBtn.addEventListener("click",reset);
+    againBtn.addEventListener("click",reset);
+    playAgainOver.addEventListener("click",reset);
+
+    closeBtn.addEventListener("click",()=>{
+      overlay.classList.remove("open");
+      locked=false;
+      currentQuestion=null;
+      currentArtifact=null;
+    });
+
+    hintOk.addEventListener("click",()=>{
+      hintScreen.classList.remove("open");
+    });
+
+    Promise.all(Object.values(images).map(img=>new Promise(res=>{
+      if(img.complete) res();
+      img.onload=res;
+      img.onerror=res;
+    }))).then(()=>{
+      reset();
+      requestAnimationFrame(step);
+    });
+  </script>
+</body>
+</html>
