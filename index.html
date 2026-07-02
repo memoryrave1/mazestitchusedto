@@ -146,9 +146,9 @@
 
       <div class="hud">
         <div class="leftHud">
-          <div class="pill">Очки: <span id="score">0</span></div>
-          <div class="pill">Задания: <span id="tasks">0</span>/10</div>
-          <div class="pill">Ошибки: <span id="mistakes">0</span>/3</div>
+          <div class="pill">Score: <span id="score">0</span></div>
+          <div class="pill">Task: <span id="tasks">0</span>/10</div>
+          <div class="pill">Mistakes: <span id="mistakes">0</span>/3</div>
         </div>
         <button class="restart" id="restart" aria-label="Перезапустить">↻</button>
       </div>
@@ -174,15 +174,14 @@
 
       <section class="hintScreen" id="hintScreen">
         <div class="hintBox">
-          <h2>Почти!</h2>
-          <p id="hintText">Сначала собери все артефакты!</p>
+          <h2>Almost there!</h2>
           <button id="hintOk">Ок</button>
         </div>
       </section>
 
       <section class="finishScreen" id="finishScreen">
         <div class="finishBox">
-          <h2>Готово</h2>
+          <h2>Well done!</h2>
           <p id="finishText"></p>
           <button id="again">Play again</button>
         </div>
@@ -191,8 +190,7 @@
       <section class="gameOverScreen" id="gameOverScreen">
         <div class="gameOverBox">
           <h2>Game Over</h2>
-          <p>Ты допустил 3 ошибки.</p>
-          <button id="playAgainOver">Play again</button>
+          <button id="playAgainOver">Play again?</button>
         </div>
       </section>
     </main>
